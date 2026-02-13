@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETL Services Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 ETL Services Monitor</h1>
+            <p class="subtitle">Gestión y monitoreo de servicios ETL</p>
+            <button class="btn btn-primary" onclick="openTrackingModal()" style="margin-top: 10px;">
+                📊 Seguimiento de Archivos
+            </button>
+        </header>
+
+        <div class="services-grid" id="servicesGrid">
+            <!-- Los servicios se cargarán aquí dinámicamente -->
+        </div>
+
+        <div class="logs-section" id="logsSection" style="display: none;">
+            <div class="logs-header">
+                <h2>📋 Logs del Servicio</h2>
+                <button class="btn btn-secondary" onclick="closeLogs()">Cerrar</button>
+            </div>
+            <div class="logs-content" id="logsContent">
+                <pre id="logsText"></pre>
+            </div>
+        </div>
+
+        <!-- Modal de seguimiento de archivos -->
+        <div class="tracking-modal" id="trackingModal" style="display: none;">
+            <div class="tracking-modal-content">
+                <div class="tracking-modal-header">
+                    <h2>📊 Seguimiento de Archivos ETL</h2>
+                    <button class="btn btn-secondary" onclick="closeTrackingModal()">✕</button>
+                </div>
+                <div class="tracking-modal-body">
+                    <div class="tracking-search">
+                        <input type="text" id="trackingSearchInput" placeholder="Buscar por nombre de archivo Excel (ej: archivo.xlsx)" 
+                               onkeypress="if(event.key === 'Enter') trackFile()">
+                        <button class="btn btn-primary" onclick="trackFile()">Buscar</button>
+                    </div>
+                    <div class="tracking-results" id="trackingResults" style="display: none;">
+                        <div class="tracking-file-info">
+                            <h3 id="trackingFileName"></h3>
+                            <div class="pipeline-status" id="pipelineStatus">
+                                <!-- Se llenará dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tracking-error" id="trackingError" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Mantenedor de Triggers y APIs -->
+        <div class="trigger-manager-modal" id="triggerManagerModal" style="display: none;">
+            <div class="trigger-manager-modal-content">
+                <div class="trigger-manager-header">
+                    <h2>🔧 Mantenedor de Triggers y APIs</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-success" onclick="executeAllTriggers()" id="executeTriggersBtn">▶️ Ejecutar Todos</button>
+                        <button class="btn btn-secondary" onclick="closeTriggerManager()">✕</button>
+                    </div>
+                </div>
+                <div class="trigger-manager-body">
+                    <!-- Área de progreso de ejecución -->
+                    <div class="execution-progress" id="executionProgress" style="display: none;">
+                        <h4>🔄 Ejecutando Triggers y APIs</h4>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                        <div class="execution-log" id="executionLog">
+                            <!-- Se llenará dinámicamente -->
+                        </div>
+                        <div class="execution-actions">
+                            <button class="btn btn-danger" onclick="stopExecution()" id="stopExecutionBtn">⏹️ Detener</button>
+                            <button class="btn btn-secondary" onclick="restoreTriggerManagerView()" id="backToManagerBtn" style="display: none;">← Volver al Mantenedor</button>
+                        </div>
+                    </div>
+                    
+                    <div class="trigger-manager-split" id="triggerManagerSplit">
+                        <!-- Primera mitad: Triggers -->
+                        <div class="trigger-manager-half">
+                            <h3>📋 Triggers</h3>
+                            <div class="trigger-manager-actions">
+                                <button class="btn btn-success" onclick="showAddTriggerForm()">➕ Agregar Trigger</button>
+                            </div>
+                            <div class="trigger-list" id="triggerList">
+                                <!-- Se llenará dinámicamente -->
+                            </div>
+                        </div>
+                        
+                        <!-- Segunda mitad: APIs del trigger seleccionado -->
+                        <div class="trigger-manager-half">
+                            <h3>🔌 APIs</h3>
+                            <div id="apiSection" style="display: none;">
+                                <div class="api-selected-trigger">
+                                    <strong>Trigger:</strong> <span id="selectedTriggerName"></span>
+                                </div>
+                                
+                                <!-- Parte superior (30%): Prefijos y tags -->
+                                <div class="api-section-top">
+                                    <div class="trigger-manager-actions">
+                                        <button class="btn btn-info" onclick="openPrefixModal()">🏷️ Prefijos</button>
+                                        <button class="btn btn-success" onclick="showAddApiForm()">➕ Agregar API</button>
+                                    </div>
+                                    <div class="trigger-tags" id="triggerTags">
+                                        <!-- Tags de prefijos seleccionados se mostrarán aquí -->
+                                    </div>
+                                </div>
+                                
+                                <!-- Parte inferior (70%): Lista de APIs -->
+                                <div class="api-section-bottom">
+                                    <div class="api-list" id="apiList">
+                                        <!-- Se llenará dinámicamente -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="apiSectionEmpty" class="api-section-empty">
+                                <p>Selecciona un trigger para gestionar sus APIs</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para agregar/editar Trigger -->
+        <div class="trigger-form-modal" id="triggerFormModal" style="display: none;">
+            <div class="trigger-form-modal-content">
+                <div class="trigger-form-header">
+                    <h3 id="triggerFormTitle">Agregar Trigger</h3>
+                    <button class="btn btn-secondary" onclick="closeTriggerForm()">✕</button>
+                </div>
+                <div class="trigger-form-body">
+                    <form id="triggerForm" onsubmit="saveTrigger(event)">
+                        <input type="hidden" id="triggerFormId">
+                        <div class="form-group">
+                            <label for="triggerName">Nombre del Trigger *</label>
+                            <input type="text" id="triggerName" required placeholder="Ej: Trigger de sincronización">
+                        </div>
+                        <div class="form-group">
+                            <label for="triggerDescription">Descripción</label>
+                            <textarea id="triggerDescription" rows="3" placeholder="Descripción del trigger"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Guardar</button>
+                            <button type="button" class="btn btn-secondary" onclick="closeTriggerForm()">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para agregar/editar API -->
+        <div class="api-form-modal" id="apiFormModal" style="display: none;">
+            <div class="api-form-modal-content">
+                <div class="api-form-header">
+                    <h3 id="apiFormTitle">Agregar API</h3>
+                    <button class="btn btn-secondary" onclick="closeApiForm()">✕</button>
+                </div>
+                <div class="api-form-body">
+                    <form id="apiForm" onsubmit="saveApi(event)">
+                        <input type="hidden" id="apiFormTriggerId">
+                        <input type="hidden" id="apiFormId">
+                        <div class="form-group">
+                            <label for="apiName">Nombre de la API *</label>
+                            <input type="text" id="apiName" required placeholder="Ej: API de usuarios">
+                        </div>
+                        <div class="form-group">
+                            <label for="apiEndpoint">Endpoint *</label>
+                            <input type="text" id="apiEndpoint" required placeholder="Ej: /api/users/list">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Guardar</button>
+                            <button type="button" class="btn btn-secondary" onclick="closeApiForm()">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Prefijos TCODE -->
+        <div class="prefix-modal" id="prefixModal" style="display: none;">
+            <div class="prefix-modal-content">
+                <div class="prefix-modal-header">
+                    <h3>🏷️ Prefijos TCODE</h3>
+                    <button class="btn btn-secondary" onclick="closePrefixModal()">✕</button>
+                </div>
+                <div class="prefix-modal-body">
+                    <p class="prefix-modal-description">Selecciona los prefijos TCODE que gestiona etl_consolidacion para agregarlos como tags al trigger:</p>
+                    <div class="prefix-list" id="prefixList">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                    <div class="prefix-actions">
+                        <button class="btn btn-primary" onclick="applySelectedPrefixes()">Aplicar Selección</button>
+                        <button class="btn btn-secondary" onclick="closePrefixModal()">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panel de cambios de tablas (parte inferior) -->
+        <div class="table-changes-panel" id="tableChangesPanel">
+            <div class="table-changes-header" onclick="toggleTableChangesPanel()">
+                <div class="table-changes-header-left">
+                    <span class="table-changes-icon">📊</span>
+                    <span class="table-changes-title">Cambios de Tablas LEK-JOINED-DEV</span>
+                    <span class="table-changes-count" id="tableChangesCount">0</span>
+                </div>
+                <div class="table-changes-header-right">
+                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); clearTableChangesHistory()">🗑️ Limpiar</button>
+                    <span class="table-changes-toggle" id="tableChangesToggle">▼</span>
+                </div>
+            </div>
+            <div class="table-changes-body" id="tableChangesBody" style="display: none;">
+                <div class="table-changes-list" id="tableChangesList">
+                    <div class="table-changes-empty">No hay cambios registrados aún</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Área de notificaciones de cambios de tablas -->
+    <div class="notifications-container" id="notificationsContainer"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+
+
+

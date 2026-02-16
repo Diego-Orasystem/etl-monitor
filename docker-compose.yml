@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  etl-monitor:
+    build:
+      context: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      ETL_DOCKER_BIN: "docker"
+      ETL_DOCKER_COMPOSE_BIN: "docker compose"
+      ETL_DOCKER_COMPOSE_FILE: "/home/fits/etl-deploy/docker-compose.yml"
+      ETL_DOCKER_PROJECT_DIR: "/home/fits/etl-deploy"
+      ETL_UPSERT_LOG_PATH: "/home/fits/etl-data/etl_upsert/etl_upsert.log"
+      ETL_CONSOL_SPEC_PATH: "/home/fits/codigo/Desktop/etl_consol/tcode-spec.json"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/fits/etl-deploy:/home/fits/etl-deploy:ro
+      - /home/fits/etl-data:/home/fits/etl-data:ro
+      - /home/fits/codigo/Desktop:/home/fits/codigo/Desktop:ro
+      - ./data:/app/data

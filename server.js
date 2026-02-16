@@ -16,7 +16,7 @@ const io = new Server(server, {
     methods: ["GET", "POST"]
   }
 });
-const PORT = 3000;
+const PORT = Number.parseInt(process.env.PORT, 10) || 3000;
 
 const DOCKER_BIN = process.env.ETL_DOCKER_BIN || 'docker';
 const DOCKER_COMPOSE_BIN = process.env.ETL_DOCKER_COMPOSE_BIN || 'docker compose';

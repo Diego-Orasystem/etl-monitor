@@ -13,30 +13,47 @@ Interfaz web para gestionar y monitorear los servicios ETL (etl-upsert y etl-ana
 
 ## Instalación
 
-### 1. Instalar dependencias
+### Opción A: Docker (recomendado)
+
+```bash
+cd /home/fits/etl-monitor
+docker compose up -d --build
+```
+
+El servidor se iniciará en `http://0.0.0.0:3000`.
+
+> Nota: el contenedor necesita acceso al Docker del host para controlar los ETL. El `docker-compose.yml` ya monta `/var/run/docker.sock` y las rutas requeridas:
+> - `/home/fits/etl-deploy`
+> - `/home/fits/codigo/Desktop`
+> - `/home/fits/etl-data`
+> - `./data`
+
+### Opción B: Local (Node.js)
+
+#### 1. Instalar dependencias
 
 ```bash
 cd /home/fits/etl-monitor
 npm install
 ```
 
-### 2. Iniciar el servidor
+#### 2. Iniciar el servidor
 
 ```bash
 npm start
 ```
 
-El servidor se iniciará en `http://0.0.0.0:3000`
+El servidor se iniciará en `http://0.0.0.0:3000`.
 
-### 3. Acceder a la interfaz
+#### 3. Acceder a la interfaz
 
 Abre tu navegador y ve a:
 - `http://localhost:3000` (desde la misma máquina)
 - `http://[IP_DE_LA_MAQUINA]:3000` (desde otra máquina en la red)
 
-## Configurar como servicio (Opcional)
+## Configurar como servicio (Opcional, si lo ejecutas en host)
 
-Para que el monitor también corra como servicio:
+Para que el monitor corra como servicio en el host:
 
 ```bash
 cat > /etc/systemd/system/etl-monitor.service << 'EOF'
@@ -73,14 +90,16 @@ systemctl start etl-monitor.service
 
 ## Requisitos
 
-- Node.js 18+ instalado
-- Permisos para ejecutar comandos `docker` (para controlar servicios en contenedores)
+- Docker Engine + Docker Compose v2 (si usas Docker)
+- Node.js 18+ instalado (si lo ejecutas en host)
+- Permisos para ejecutar comandos `docker` (o acceso al socket)
 
 ## Variables de entorno (Docker)
 
 El monitor controla servicios ETL ejecutados en Docker mediante `docker compose`:
 
 ```bash
+PORT=3000
 ETL_DOCKER_BIN=docker
 ETL_DOCKER_COMPOSE_BIN="docker compose"
 ETL_DOCKER_COMPOSE_FILE=/home/fits/etl-deploy/docker-compose.yml
@@ -91,7 +110,7 @@ ETL_CONSOL_SPEC_PATH=/home/fits/codigo/Desktop/etl_consol/tcode-spec.json
 
 ## Seguridad
 
-⚠️ **Nota**: Este servidor debe ejecutarse con permisos de root para poder gestionar los servicios systemd. Asegúrate de:
+⚠️ **Nota**: Para controlar Docker, el monitor necesita acceso al socket `/var/run/docker.sock` (equivalente a permisos elevados en el host). Asegúrate de:
 
 - No exponer este puerto a internet sin protección
 - Usar un firewall para restringir el acceso
@@ -104,8 +123,9 @@ ETL_CONSOL_SPEC_PATH=/home/fits/codigo/Desktop/etl_consol/tcode-spec.json
 - Verifica que las dependencias estén instaladas: `npm install`
 
 ### No se pueden controlar los servicios
-- Verifica que el servidor se ejecute con permisos de root
-- Verifica que los servicios existan: `systemctl list-units | grep etl`
+- Verifica acceso a Docker (socket montado en contenedor o permisos locales)
+- Verifica que exista el archivo `ETL_DOCKER_COMPOSE_FILE`
+- Verifica que `docker compose` funcione en el host
 
 ### Error de conexión
 - Verifica que el puerto 3000 no esté en uso: `netstat -tlnp | grep 3000`
